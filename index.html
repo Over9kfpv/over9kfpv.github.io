@@ -12,7 +12,9 @@
 :root{--bg:#090b0f;--card:#14171d;--border:#3f3f46;--text:#f4f4f5;--muted:#a1a1aa;--accent:#ff5500;--lime:#e2f900;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;display:flex;justify-content:center;background:var(--bg) radial-gradient(#262a30 1.2px,transparent 1.2px) 0 0/10px 10px;color:var(--text);font:16px/1.5 "JetBrains Mono",ui-monospace,monospace}
-main{width:100%;max-width:520px;padding:0 16px 40px}
+main{width:100%;max-width:1040px;padding:0 16px 40px}
+.cols{display:grid;gap:0 40px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media (min-width:860px){.cols{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}.cols aside h2:first-child{margin-top:0}}
 .tape{height:14px;margin:0 -16px 48px;background:repeating-linear-gradient(-45deg,var(--lime),var(--lime) 12px,#000 12px,#000 24px);border-bottom:4px solid #000}
 h1{margin:0 0 6px;font:700 2.5rem/1.1 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.02em;text-transform:uppercase}
 h1 span{color:var(--bg);background:var(--accent);padding:0 .15em;margin-left:.05em;box-shadow:4px 4px 0 #000;display:inline-block;transform:rotate(-2deg)}
@@ -28,7 +30,12 @@ h2::before{content:"// "}
 .frame{background:var(--card);border:2px solid var(--border);border-top:4px solid var(--accent);box-shadow:5px 5px 0 #000}
 .frame iframe{display:block;width:100%;border:0}
 .yt iframe{aspect-ratio:16/9}
-.ig iframe{height:480px;background:#fff}
+.ig{position:relative;background:var(--card)}
+.ig .hd{height:136px}
+.ig .sq{padding-bottom:33.4%}
+.ig iframe{position:absolute;inset:0;height:100%}
+.ig iframe.top{filter:invert(1) hue-rotate(180deg);clip-path:inset(0 0 calc(100% - 136px) 0)}
+.ig iframe.grid{clip-path:inset(136px 0 0 0)}
 ul.feed{list-style:none;margin:0;padding:0}
 ul.feed li{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.8125rem}
 ul.feed li:last-child{border:0}
@@ -46,6 +53,8 @@ ul.feed .msg{display:block;margin-top:2px;color:var(--muted);overflow:hidden;tex
   <div class="tape"></div>
   <h1>Over9k<span>FPV</span></h1>
   <p class="tag">FPV drones, EdgeTX sounds and videos</p>
+<div class="cols">
+<section>
   <a class="link" href="https://over9kfpv.github.io/stickbeats/">Stickbeats<small>Sound themes and voice packs for EdgeTX radios</small></a>
   <a class="link" href="https://github.com/Over9kfpv/whoopshop">Whoopshop<small>AI-assisted Tiny Whoop workshop: tune, log and analyze Betaflight micro-drones</small></a>
   <a class="link" href="https://over9kfpv.github.io/whooplog/">Whooplog<small>1S tinywhoop build spec, rates, blackbox workflow and flight log</small></a>
@@ -53,12 +62,19 @@ ul.feed .msg{display:block;margin-top:2px;color:var(--muted);overflow:hidden;tex
   <a class="link" href="https://github.com/Over9kfpv">GitHub<small>Over9kfpv: all repositories</small></a>
   <a class="link" href="https://www.youtube.com/@Over9Kfpv">YouTube<small>@Over9Kfpv</small></a>
   <a class="link" href="https://www.instagram.com/over9k.fpv/">Instagram<small>@over9k.fpv</small></a>
+</section>
+<aside>
   <h2>Latest changes on GitHub</h2>
   <div class="frame"><ul class="feed" id="feed"><li class="note">Loading...</li></ul></div>
   <h2>Latest videos</h2>
   <div class="frame yt"><iframe src="https://www.youtube-nocookie.com/embed/videoseries?list=UUlIm3yCcZIXVmQB-U0dT4Aw" title="Over9kFPV YouTube uploads" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
   <h2>Instagram</h2>
-  <div class="frame ig"><iframe src="https://www.instagram.com/over9k.fpv/embed/" title="Over9kFPV Instagram" loading="lazy" scrolling="no"></iframe></div>
+  <div class="frame ig"><div class="hd"></div><div class="sq"></div>
+    <iframe class="top" src="https://www.instagram.com/over9k.fpv/embed/" title="Over9kFPV Instagram" loading="lazy" scrolling="no"></iframe>
+    <iframe class="grid" src="https://www.instagram.com/over9k.fpv/embed/" title="" aria-hidden="true" tabindex="-1" loading="lazy" scrolling="no"></iframe>
+  </div>
+</aside>
+</div>
 </main>
 <script>
 (function(){
