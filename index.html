@@ -5,22 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Over9kFPV</title>
 <meta name="description" content="Over9kFPV: FPV drones, EdgeTX sound themes and videos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0b0d12;--card:#151924;--border:#252b3a;--text:#eef1f7;--muted:#8c95aa;--accent:#ff5a1f}
-@media (prefers-color-scheme: light){:root{--bg:#f4f5f8;--card:#fff;--border:#dde1ea;--text:#151924;--muted:#5d667a}}
+:root{--bg:#090b0f;--card:#14171d;--border:#3f3f46;--text:#f4f4f5;--muted:#a1a1aa;--accent:#ff5500;--lime:#e2f900;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;justify-content:center;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{width:100%;max-width:480px;padding:56px 16px 40px;text-align:center}
-h1{margin:0 0 4px;font-size:2rem;letter-spacing:-.02em}
-h1 span{color:var(--accent)}
-p.tag{margin:0 0 32px;color:var(--muted)}
-a.link{display:block;margin:0 0 12px;padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:14px;color:inherit;text-decoration:none;font-weight:600;text-align:left;transition:transform .12s,border-color .12s}
-a.link:hover,a.link:focus-visible{transform:translateY(-2px);border-color:var(--accent);outline:none}
-a.link small{display:block;margin-top:2px;color:var(--muted);font-weight:400;font-size:.875rem}
+body{margin:0;min-height:100vh;display:flex;justify-content:center;background:var(--bg) radial-gradient(#262a30 1.2px,transparent 1.2px) 0 0/10px 10px;color:var(--text);font:16px/1.5 "JetBrains Mono",ui-monospace,monospace}
+main{width:100%;max-width:520px;padding:0 16px 40px}
+.tape{height:14px;margin:0 -16px 48px;background:repeating-linear-gradient(-45deg,var(--lime),var(--lime) 12px,#000 12px,#000 24px);border-bottom:4px solid #000}
+h1{margin:0 0 6px;font:700 2.5rem/1.1 "Space Grotesk",system-ui,sans-serif;letter-spacing:-.02em;text-transform:uppercase}
+h1 span{color:var(--bg);background:var(--accent);padding:0 .15em;margin-left:.05em;box-shadow:4px 4px 0 #000;display:inline-block;transform:rotate(-2deg)}
+p.tag{margin:0 0 32px;color:var(--muted);font-size:.8125rem;letter-spacing:.06em;text-transform:uppercase}
+a.link{position:relative;display:block;margin:0 0 16px;padding:14px 48px 14px 18px;background:var(--card);border:2px solid var(--border);border-top:4px solid var(--accent);border-radius:0;color:inherit;text-decoration:none;font:700 1.0625rem/1.3 "Space Grotesk",system-ui,sans-serif;box-shadow:5px 5px 0 #000;transition:transform .1s,box-shadow .1s,border-color .1s}
+a.link::after{content:"\2192";position:absolute;right:18px;top:50%;margin-top:-.7em;font-family:"JetBrains Mono",monospace;color:var(--accent)}
+a.link:hover,a.link:focus-visible{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--lime);border-color:var(--lime);border-top-color:var(--lime);outline:none}
+a.link:hover::after,a.link:focus-visible::after{color:var(--lime)}
+a.link:active{transform:translate(3px,3px);box-shadow:2px 2px 0 #000}
+a.link small{display:block;margin-top:4px;color:var(--muted);font:400 .75rem/1.5 "JetBrains Mono",monospace}
+@media (prefers-reduced-motion:reduce){a.link{transition:none}}
 </style>
 </head>
 <body>
 <main>
+  <div class="tape"></div>
   <h1>Over9k<span>FPV</span></h1>
   <p class="tag">FPV drones, EdgeTX sounds and videos</p>
   <a class="link" href="https://over9kfpv.github.io/stickbeats/">Stickbeats<small>Sound themes and voice packs for EdgeTX radios</small></a>
