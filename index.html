@@ -23,6 +23,21 @@ a.link:hover,a.link:focus-visible{transform:translate(-2px,-2px);box-shadow:7px 
 a.link:hover::after,a.link:focus-visible::after{color:var(--lime)}
 a.link:active{transform:translate(3px,3px);box-shadow:2px 2px 0 #000}
 a.link small{display:block;margin-top:4px;color:var(--muted);font:400 .75rem/1.5 "JetBrains Mono",monospace}
+h2{margin:40px 0 12px;font:500 .75rem/1 "JetBrains Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--lime)}
+h2::before{content:"// "}
+.frame{background:var(--card);border:2px solid var(--border);border-top:4px solid var(--accent);box-shadow:5px 5px 0 #000}
+.frame iframe{display:block;width:100%;border:0}
+.yt iframe{aspect-ratio:16/9}
+.ig iframe{height:480px;background:#fff}
+ul.feed{list-style:none;margin:0;padding:0}
+ul.feed li{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.8125rem}
+ul.feed li:last-child{border:0}
+ul.feed a{color:var(--text);text-decoration:none}
+ul.feed a:hover{color:var(--lime)}
+ul.feed .repo{color:var(--accent);font-weight:700}
+ul.feed .when{float:right;color:var(--muted);margin-left:8px}
+ul.feed .msg{display:block;margin-top:2px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note{padding:12px 14px;color:var(--muted);font-size:.8125rem}
 @media (prefers-reduced-motion:reduce){a.link{transition:none}}
 </style>
 </head>
@@ -35,8 +50,38 @@ a.link small{display:block;margin-top:4px;color:var(--muted);font:400 .75rem/1.5
   <a class="link" href="https://github.com/Over9kfpv/whoopshop">Whoopshop<small>AI-assisted Tiny Whoop workshop: tune, log and analyze Betaflight micro-drones</small></a>
   <a class="link" href="https://over9kfpv.github.io/whooplog/">Whooplog<small>1S tinywhoop build spec, rates, blackbox workflow and flight log</small></a>
   <a class="link" href="https://github.com/Over9kfpv/betaflight-skill">Betaflight skill<small>Agent skill for Betaflight: CLI, settings and blackbox analysis</small></a>
+  <a class="link" href="https://github.com/Over9kfpv">GitHub<small>Over9kfpv: all repositories</small></a>
   <a class="link" href="https://www.youtube.com/@Over9Kfpv">YouTube<small>@Over9Kfpv</small></a>
   <a class="link" href="https://www.instagram.com/over9k.fpv/">Instagram<small>@over9k.fpv</small></a>
+  <h2>Latest changes on GitHub</h2>
+  <div class="frame"><ul class="feed" id="feed"><li class="note">Loading...</li></ul></div>
+  <h2>Latest videos</h2>
+  <div class="frame yt"><iframe src="https://www.youtube-nocookie.com/embed/videoseries?list=UUlIm3yCcZIXVmQB-U0dT4Aw" title="Over9kFPV YouTube uploads" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+  <h2>Instagram</h2>
+  <div class="frame ig"><iframe src="https://www.instagram.com/over9k.fpv/embed/" title="Over9kFPV Instagram" loading="lazy" scrolling="no"></iframe></div>
 </main>
+<script>
+(function(){
+var ORG="Over9kfpv",API="https://api.github.com",feed=document.getElementById("feed");
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function ago(d){var m=(Date.now()-new Date(d))/6e4;if(m<60)return Math.max(1,Math.round(m))+"m";if(m<1440)return Math.round(m/60)+"h";return Math.round(m/1440)+"d"}
+function get(u){return fetch(u).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})}
+function render(items){
+  feed.innerHTML=items.map(function(c){
+    return'<li><span class="when">'+ago(c.date)+'</span><a href="'+esc(c.url)+'"><span class="repo">'+esc(c.repo)+'</span><span class="msg">'+esc(c.msg)+'</span></a></li>'}).join("")||'<li class="note">No recent commits.</li>';
+}
+function fail(){feed.innerHTML='<li class="note">Could not load. <a href="https://github.com/'+ORG+'">Open GitHub</a></li>'}
+try{var c=JSON.parse(sessionStorage.getItem("gh"));if(c&&Date.now()-c.t<6e5){render(c.items);return}}catch(e){}
+get(API+"/orgs/"+ORG+"/repos?sort=pushed&per_page=5").then(function(repos){
+  return Promise.all(repos.filter(function(r){return!r.fork}).slice(0,4).map(function(r){
+    return get(API+"/repos/"+r.full_name+"/commits?per_page=3").then(function(cs){
+      return cs.map(function(x){return{repo:r.name,msg:x.commit.message.split("\n")[0],date:x.commit.author.date,url:x.html_url}})}).catch(function(){return[]})}))
+}).then(function(all){
+  var items=[].concat.apply([],all).sort(function(a,b){return new Date(b.date)-new Date(a.date)}).slice(0,6);
+  try{sessionStorage.setItem("gh",JSON.stringify({t:Date.now(),items:items}))}catch(e){}
+  render(items)
+}).catch(fail);
+})();
+</script>
 </body>
 </html>
