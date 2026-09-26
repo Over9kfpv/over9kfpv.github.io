@@ -2,7 +2,7 @@
 // Build the lyric-video composition (index.html) for one song.
 // Usage: node build.mjs <album-track-number>   (Songs for Fallen Drones, metadata from tracks.js)
 //        node build.mjs <project-dir>          (any song; metadata from <project-dir>/video.json)
-// Expects <project>/{lyrics.json,audiomap.json,assets/bgm.mp3} to exist.
+// Expects <project>/{audiomap.json,assets/bgm.mp3}; lyrics.json is optional (instrumentals).
 // video.json: {title, band, art, kicker, metaLeft, metaRight, outroKicker, outroBy}
 //   or {layout: "subtitles", title, band, subtitle, art} for a transparent bottom-subtitle overlay
 import { readFileSync, writeFileSync, copyFileSync, mkdirSync, readdirSync, existsSync } from "node:fs";
@@ -36,7 +36,8 @@ if (/^\d+$/.test(arg)) {
 }
 const projectName = basename(dir);
 
-const lyrics = JSON.parse(readFileSync(join(dir, "lyrics.json"), "utf8"));
+const lyricsFile = join(dir, "lyrics.json");
+const lyrics = existsSync(lyricsFile) ? JSON.parse(readFileSync(lyricsFile, "utf8")) : { lines: [] };
 const audiomap = JSON.parse(readFileSync(join(dir, "audiomap.json"), "utf8"));
 const D = Math.round(audiomap.audio.duration_sec * 1000) / 1000;
 
@@ -62,7 +63,7 @@ for (const l of lyrics.lines) {
   });
   prevEnd = Math.max(prevEnd, l.end);
 }
-const firstStart = lines[0].start;
+const firstStart = lines.length ? lines[0].start : 0;
 const lastEnd = prevEnd;
 
 // Beat pulses: strong-grid kicks with real energy, thinned to >= 0.4s apart.
@@ -76,7 +77,19 @@ for (const e of audiomap.events) {
 }
 const surges = audiomap.key_moments.filter((k) => k.kind === "SURGE").map((k) => k.t);
 
-const data = { D, firstStart, lastEnd, lines, pulses, surges };
+// Drum hits for the instrumental equalizer: [t, band (0 low · 1 mid · 2 high), energy].
+const BAND = { kick: 0, perc: 1, snare: 1, glitch: 1, hihat: 2 };
+const hits = [];
+if (!lines.length) {
+  const last = [-1, -1, -1];
+  for (const e of audiomap.events) {
+    const b = BAND[e.drum] ?? 1;
+    if (e.t - last[b] < 0.12) continue;
+    last[b] = e.t;
+    hits.push([+e.t.toFixed(3), b, Math.min(1, e.energy / (kickE[kickE.length - 1] || 1) + 0.25)]);
+  }
+}
+const data = { D, firstStart, lastEnd, lines, pulses, surges, hits };
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 

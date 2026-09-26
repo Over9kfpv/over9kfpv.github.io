@@ -40,6 +40,11 @@ export function subtitlesHTML({ data, cfg, D, esc }) {
       .line.inst { color: var(--gold); letter-spacing: 0.4em; }
       .w { display: inline-block; opacity: 0.45; }
 
+      #eq { position: absolute; left: 50%; bottom: 0; width: 720px; height: 110px; margin-left: -360px;
+        display: flex; align-items: flex-end; justify-content: space-between; }
+      .bar { display: block; width: 22px; height: 110px; border-radius: 4px 4px 1px 1px; transform-origin: 50% 100%;
+        background: linear-gradient(180deg, #ffe38a 0%, #ffc53d 25%, #ff5500 60%, #ff2e88 100%);
+        box-shadow: 0 0 14px rgba(255,85,0,0.35); }
       #progress { position: absolute; left: 80px; right: 80px; bottom: 40px; height: 4px;
         background: rgba(255,255,255,0.18); border-radius: 2px; }
       #bar { width: 100%; height: 4px; background: var(--sun); border-radius: 2px; transform-origin: 0% 50%; }
@@ -78,6 +83,17 @@ export function subtitlesHTML({ data, cfg, D, esc }) {
         return el;
       });
 
+      // Instrumental: an equalizer in place of the subtitle line.
+      const bars = [];
+      if (!DATA.lines.length) {
+        const eq = document.createElement("div");
+        eq.id = "eq";
+        for (let i = 0; i < 24; i++) { const b = document.createElement("div"); b.className = "bar"; eq.appendChild(b); bars.push(b); }
+        subs.appendChild(eq);
+      }
+      // Deterministic per-(hit, bar) jitter so bars in a band don't move in lockstep.
+      const jitter = (h, i) => { const x = Math.sin(h * 12.9898 + i * 78.233) * 43758.5453; return x - Math.floor(x); };
+
       document.fonts.ready.then(() => {
         const D = DATA.D, tl = gsap.timeline({ paused: true });
         // Band in / out.
@@ -103,6 +119,17 @@ export function subtitlesHTML({ data, cfg, D, esc }) {
           });
         });
         lineEls.forEach((el) => gsap.set(el, { opacity: 0 }));
+
+        if (bars.length) {
+          const REST = 0.08;
+          gsap.set(bars, { scaleY: REST });
+          DATA.hits.forEach(([t, band, e], h) => {
+            if (t > D - 1.5) return;
+            const group = bars.slice(band * 8, band * 8 + 8);
+            tl.fromTo(group, { scaleY: (i) => Math.min(1, REST + Math.pow(e, 0.5) * (0.6 + 0.4 * jitter(h, i))) },
+              { scaleY: REST, duration: band === 2 ? 0.22 : 0.4, ease: "power2.out", immediateRender: false }, t);
+          });
+        }
 
         // Beat pulses on the cover thumbnail.
         DATA.pulses.forEach(([t, e]) => {
