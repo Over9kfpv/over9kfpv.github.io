@@ -1,22 +1,40 @@
 #!/usr/bin/env node
-// Build the lyric-video composition (index.html) for one album track.
-// Usage: node build.mjs <track-number>
-// Expects videos/NN-<slug>/{lyrics.json,audiomap.json,assets/bgm.mp3} to exist.
+// Build the lyric-video composition (index.html) for one song.
+// Usage: node build.mjs <album-track-number>   (Songs for Fallen Drones, metadata from tracks.js)
+//        node build.mjs <project-dir>          (any song; metadata from <project-dir>/video.json)
+// Expects <project>/{lyrics.json,audiomap.json,assets/bgm.mp3} to exist.
+// video.json: {title, band, art, kicker, metaLeft, metaRight, outroKicker, outroBy}
+//   or {layout: "subtitles", title, band, subtitle, art} for a transparent bottom-subtitle overlay
 import { readFileSync, writeFileSync, copyFileSync, mkdirSync, readdirSync, existsSync } from "node:fs";
-import { dirname, join, basename } from "node:path";
+import { dirname, join, basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { subtitlesHTML } from "./subtitles-template.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const album = join(here, "..", "..");
-const n = Number(process.argv[2]);
-if (!n) throw new Error("usage: build.mjs <track-number>");
+const arg = process.argv[2];
+if (!arg) throw new Error("usage: build.mjs <track-number | project-dir>");
 
-const win = {};
-new Function("window", readFileSync(join(album, "tracks.js"), "utf8"))(win);
-const track = win.TRACKS.find((t) => t.n === n);
-const nn = String(n).padStart(2, "0");
-const projectName = basename(track.src, ".mp3");
-const dir = join(album, "videos", projectName);
+let dir, cfg;
+if (/^\d+$/.test(arg)) {
+  const n = Number(arg);
+  const win = {};
+  new Function("window", readFileSync(join(album, "tracks.js"), "utf8"))(win);
+  const track = win.TRACKS.find((t) => t.n === n);
+  const nn = String(n).padStart(2, "0");
+  dir = join(album, "videos", basename(track.src, ".mp3"));
+  cfg = {
+    title: track.title, band: track.band, art: join(album, track.art),
+    kicker: `Track ${nn} · Songs for Fallen Drones`,
+    metaLeft: "Songs for Fallen Drones", metaRight: `<b>${nn}</b> / 12`,
+    outroKicker: "Songs for Fallen Drones", outroBy: "over9kfpv.github.io",
+  };
+} else {
+  dir = resolve(arg);
+  cfg = JSON.parse(readFileSync(join(dir, "video.json"), "utf8"));
+  cfg.art = resolve(dir, cfg.art);
+}
+const projectName = basename(dir);
 
 const lyrics = JSON.parse(readFileSync(join(dir, "lyrics.json"), "utf8"));
 const audiomap = JSON.parse(readFileSync(join(dir, "audiomap.json"), "utf8"));
@@ -26,7 +44,7 @@ const D = Math.round(audiomap.audio.duration_sec * 1000) / 1000;
 mkdirSync(join(dir, "assets", "fonts"), { recursive: true });
 const shared = join(album, "videos", "_shared");
 for (const f of readdirSync(join(shared, "fonts"))) copyFileSync(join(shared, "fonts", f), join(dir, "assets", "fonts", f));
-copyFileSync(join(album, track.art), join(dir, "assets", "art.webp"));
+copyFileSync(cfg.art, join(dir, "assets", "art.webp"));
 
 // ---- Timing data ---------------------------------------------------------
 const INSTRUMENTAL_GAP = 7; // seconds of no vocals before we show a ••• marker
@@ -158,10 +176,10 @@ const html = `<!doctype html>
           <div id="card-glow"></div>
           <div id="card"><img id="card-img" src="assets/art.webp" alt="" /></div>
         </div>
-        <div id="meta"><span>Songs for Fallen Drones</span><span><b>${nn}</b> / 12</span></div>
+        <div id="meta"><span>${esc(cfg.metaLeft)}</span><span>${cfg.metaRight}</span></div>
         <div id="panel">
           <div id="lyr">
-            <div id="head"><div id="band">${esc(track.band)}</div><div id="title">${esc(track.title)}</div></div>
+            <div id="head"><div id="band">${esc(cfg.band)}</div><div id="title">${esc(cfg.title)}</div></div>
             <div id="section"></div>
             <div id="viewport"><div id="scroller" data-layout-allow-overflow></div></div>
           </div>
@@ -172,16 +190,16 @@ const html = `<!doctype html>
 
       <div id="intro" class="layer clip" data-start="0" data-duration="${D}" data-track-index="4">
         <div id="intro-in">
-          <div class="kicker">Track ${nn} · Songs for Fallen Drones</div>
-          <div class="big">${esc(track.title)}</div>
-          <div class="by">${esc(track.band)}</div>
+          <div class="kicker">${esc(cfg.kicker)}</div>
+          <div class="big">${esc(cfg.title)}</div>
+          <div class="by">${esc(cfg.band)}</div>
         </div>
       </div>
       <div id="outro" class="layer clip" data-start="0" data-duration="${D}" data-track-index="5">
         <div id="outro-in">
-          <div class="kicker">Songs for Fallen Drones</div>
-          <div class="big">${esc(track.title)}</div>
-          <div class="by">over9kfpv.github.io</div>
+          <div class="kicker">${esc(cfg.outroKicker)}</div>
+          <div class="big">${esc(cfg.title)}</div>
+          <div class="by">${esc(cfg.outroBy)}</div>
         </div>
       </div>
       <div id="scan" class="layer clip" data-start="0" data-duration="${D}" data-track-index="6"></div>
@@ -309,5 +327,5 @@ const html = `<!doctype html>
   </body>
 </html>
 `;
-writeFileSync(join(dir, "index.html"), html);
+writeFileSync(join(dir, "index.html"), cfg.layout === "subtitles" ? subtitlesHTML({ data, cfg, D, esc }) : html);
 console.log(`built ${projectName}/index.html · ${D}s · ${lines.length} lines · ${pulses.length} pulses`);
