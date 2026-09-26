@@ -1,1 +1,8 @@
 _source/
+# lyric-video working projects and renders (only the tools are tracked)
+videos/*
+!videos/_tools/
+# hyperframes agent skills
+.agents/
+.claude/
+skills-lock.json

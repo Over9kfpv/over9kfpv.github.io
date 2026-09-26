@@ -18,7 +18,7 @@
 :root{--bg:#0c0812;--card:#17111f;--card2:#201729;--border:#3d2f4a;--text:#f6f1f8;--muted:#b3a6bd;--pink:#ff2e88;--accent:#ff5500;--gold:#ffc53d;--lime:#e2f900;--sun:linear-gradient(180deg,#ffe38a 0%,#ffc53d 22%,#ff5500 55%,#ff2e88 100%);color-scheme:dark}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;overflow-x:hidden;min-height:100vh;background:var(--bg) radial-gradient(#2a2033 1.2px,transparent 1.2px) 0 0/10px 10px;color:var(--text);font:15px/1.55 "JetBrains Mono",ui-monospace,monospace;padding-bottom:120px}
+body{margin:0;overflow-x:hidden;min-height:100vh;background:var(--bg) radial-gradient(#2a2033 1.2px,transparent 1.2px) 0 0/10px 10px;color:var(--text);font:15px/1.55 "JetBrains Mono",ui-monospace,monospace;padding-bottom:150px}
 a{color:var(--gold)}
 main{max-width:1040px;margin:0 auto;padding:0 16px}
 .tape{height:14px;background:repeating-linear-gradient(-45deg,var(--lime),var(--lime) 12px,#000 12px,#000 24px);border-bottom:4px solid #000}
@@ -84,6 +84,10 @@ li.open .detail{display:grid;gap:22px}
 .lyrics h4{margin:0;padding-top:.9em;font:500 .68rem/1.2 "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--lime);break-after:avoid}
 .lyrics h4:first-child{padding-top:0}
 .lyrics p{margin:0 0 .9em;break-inside:avoid}
+.lyrics .ln{display:block;color:var(--muted);transition:color .2s}
+.lyrics .ln.on{color:var(--text)}
+.lyrics .ln.on .w.sung{color:var(--gold)}
+.lyrics .ln.past{color:#8a7f93}
 
 /* liner notes */
 .notes{display:grid;gap:24px;margin:0 0 56px}
@@ -115,6 +119,13 @@ input[type=range]::-webkit-slider-runnable-track{height:4px;background:linear-gr
 input[type=range]::-moz-range-track{height:4px;background:linear-gradient(90deg,var(--gold) var(--p,0%),var(--border) var(--p,0%))}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;background:var(--lime);border:2px solid #000}
 input[type=range]::-moz-range-thumb{width:10px;height:10px;background:var(--lime);border:2px solid #000;border-radius:0}
+.live{grid-column:1/-1;min-height:1.5em;font:600 1.05rem/1.4 "Space Grotesk",sans-serif;color:#6f6478;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.live:empty{display:none}
+.live .w{transition:color .15s}
+.live .w.sung{color:var(--text)}
+.live .w.now{color:var(--gold)}
+.live.inst{color:var(--muted);letter-spacing:.3em}
+@media (max-width:520px){.live{font-size:.9rem}}
 @media (max-width:520px){.side .dur{display:none}.row{grid-template-columns:22px 44px minmax(0,1fr) auto;gap:10px;padding:10px 8px}.row img{width:44px;height:44px}.ctl button{width:38px;height:38px}}
 </style>
 </head>
@@ -189,12 +200,14 @@ input[type=range]::-moz-range-thumb{width:10px;height:10px;background:var(--lime
       <button id="pp" class="pp" aria-label="Play"><svg viewBox="0 0 24 24"><path id="ppIcon" d="M7 4v16l13-8z"/></svg></button>
       <button id="next" aria-label="Next track"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
     </div>
+    <div class="live" id="live" aria-live="off"></div>
     <div class="seek"><span id="cur">0:00</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="dur">0:00</span></div>
   </div>
 </div>
 <audio id="audio" preload="none"></audio>
 
 <script src="tracks.js"></script>
+<script src="lyrics-sync.js"></script>
 <script>
 (() => {
   const T = window.TRACKS, $ = id => document.getElementById(id);
@@ -216,6 +229,18 @@ input[type=range]::-moz-range-thumb{width:10px;height:10px;background:var(--lime
     return out;
   }).join('');
 
+  // Synced lyrics: [section, start, end, [[word, start], ...]] per line (lyrics-sync.js).
+  const SYNC = window.LYRIC_SYNC || {};
+  const wordsHTML = ws => ws.map(([w], k) => `<span class="w" data-k="${k}">${esc(w)}</span>`).join(' ');
+  const syncedHTML = lines => {
+    let out = '', sec = null;
+    lines.forEach(([s, , , ws], i) => {
+      if (s !== sec) { out += (sec !== null ? '</p>' : '') + (s ? '<h4>' + esc(s) + '</h4>' : '') + '<p>'; sec = s; }
+      out += `<span class="ln" data-i="${i}">${wordsHTML(ws)}</span>`;
+    });
+    return out + '</p>';
+  };
+
   T.forEach((t, i) => {
     const li = document.createElement('li');
     li.id = 'track-' + t.n;
@@ -227,7 +252,8 @@ input[type=range]::-moz-range-thumb{width:10px;height:10px;background:var(--lime
       const open = li.classList.toggle('open');
       btn.setAttribute('aria-expanded', open);
       const box = li.querySelector('.lyrics');
-      if (open && !box.innerHTML) box.innerHTML = lyricsHTML(t.lyrics);
+      if (open && !box.innerHTML) box.innerHTML = SYNC[t.n] ? syncedHTML(SYNC[t.n]) : lyricsHTML(t.lyrics);
+      if (open) lastLine = -2;
     });
     li.querySelector('.row').addEventListener('click', () => i === cur ? toggle() : play(i));
     list.appendChild(li);
@@ -258,6 +284,51 @@ input[type=range]::-moz-range-thumb{width:10px;height:10px;background:var(--lime
     if (!seek.dragging) { seek.value = p * 1000; seek.style.setProperty('--p', p * 100 + '%'); }
     $('cur').textContent = fmt(audio.currentTime);
   });
+  // Live lyrics: the current line in the player bar, highlighted in the open lyrics panel.
+  const live = $('live');
+  let lastLine = -2, lastWord = -2, raf = 0;
+  const LEAD = 0.25; // show a line slightly before it is sung
+  function lineAt(lines, t) {
+    let i = -1;
+    for (let k = 0; k < lines.length; k++) { if (lines[k][1] - LEAD <= t) i = k; else break; }
+    return i;
+  }
+  function syncLyrics() {
+    const lines = cur >= 0 && SYNC[T[cur].n];
+    if (!lines) { if (live.textContent) live.textContent = ''; return; }
+    const t = audio.currentTime;
+    let i = lineAt(lines, t);
+    // Long gap after a line (instrumental): show a marker instead of a stale line.
+    const gap = i >= 0 && t > lines[i][2] + 2 && (!lines[i + 1] || lines[i + 1][1] - lines[i][2] > 6);
+    if (gap) i = -1;
+    if (i !== lastLine) {
+      lastLine = i; lastWord = -2;
+      live.classList.toggle('inst', i < 0 && t > 1);
+      live.innerHTML = i >= 0 ? wordsHTML(lines[i][3]) : (t > 1 && t < (audio.duration || 1e9) - 3 ? '♪ ♪ ♪' : '');
+      const box = document.querySelector(`#track-${T[cur].n} .lyrics`);
+      if (box) box.querySelectorAll('.ln').forEach(el => {
+        const k = +el.dataset.i;
+        el.classList.toggle('on', k === i); el.classList.toggle('past', i >= 0 && k < i);
+        if (k !== i) el.querySelectorAll('.sung').forEach(w => w.classList.remove('sung'));
+      });
+    }
+    if (i < 0) return;
+    const ws = lines[i][3];
+    let w = -1;
+    for (let k = 0; k < ws.length; k++) { if (ws[k][1] <= t) w = k; else break; }
+    if (w === lastWord) return;
+    lastWord = w;
+    const panel = document.querySelector(`#track-${T[cur].n} .lyrics .ln[data-i="${i}"]`);
+    [live, panel].forEach(root => root && root.querySelectorAll('.w').forEach(el => {
+      const k = +el.dataset.k;
+      el.classList.toggle('sung', k <= w); el.classList.toggle('now', k === w);
+    }));
+  }
+  function tick() { syncLyrics(); raf = audio.paused ? 0 : requestAnimationFrame(tick); }
+  audio.addEventListener('play', () => { if (!raf) raf = requestAnimationFrame(tick); });
+  audio.addEventListener('seeked', () => { lastLine = -2; syncLyrics(); });
+  audio.addEventListener('emptied', () => { lastLine = -2; live.textContent = ''; });
+
   audio.addEventListener('loadedmetadata', () => { $('dur').textContent = fmt(audio.duration); });
   seek.addEventListener('input', () => { seek.dragging = true; seek.style.setProperty('--p', seek.value / 10 + '%'); });
   seek.addEventListener('change', () => {
