@@ -66,6 +66,7 @@ export function subtitlesHTML({ data, cfg, D, esc }) {
       const lineEls = DATA.lines.map((l) => {
         const el = document.createElement("div");
         const len = l.words.reduce((n, w) => n + w[0].length + 1, 0);
+        el.setAttribute("data-layout-allow-overlap", "");
         el.className = "line" + (l.inst ? " inst" : "") + (len > 70 ? " xlong" : len > 48 ? " long" : "");
         if (l.inst) el.textContent = "♪ ♪ ♪";
         else l.words.forEach((w, i) => {
@@ -92,9 +93,10 @@ export function subtitlesHTML({ data, cfg, D, esc }) {
           const next = DATA.lines[i + 1];
           const nextAt = next ? Math.max(0.3, next.start - IN) : D - 1.4;
           const hold = l.inst ? nextAt : Math.min(nextAt, (l.end || l.start) + 1.6);
-          const out = Math.max(at + FADE + 0.1, hold);
+          // Fade out once the line is fully in: at the hold point, or as the next line arrives.
+          const outAt = Math.max(at + FADE, Math.min(hold, nextAt - 0.05));
           tl.fromTo(lineEls[i], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: FADE, ease: "power2.out", immediateRender: false }, at);
-          tl.fromTo(lineEls[i], { opacity: 1, y: 0 }, { opacity: 0, y: -10, duration: Math.min(FADE, Math.max(0.08, nextAt - out + FADE)), ease: "power2.in", immediateRender: false }, Math.min(out, nextAt - 0.05));
+          tl.fromTo(lineEls[i], { opacity: 1, y: 0 }, { opacity: 0, y: -10, duration: FADE, ease: "power2.in", immediateRender: false }, outAt);
           const spans = lineEls[i].querySelectorAll(".w");
           l.words.forEach((w, k) => {
             tl.fromTo(spans[k], { opacity: 0.45 }, { opacity: 1, duration: Math.max(0.08, Math.min(0.18, w[2] - w[1])), ease: "power2.out", immediateRender: false }, w[1]);
